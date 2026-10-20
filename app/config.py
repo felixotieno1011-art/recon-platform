@@ -28,3 +28,26 @@ DEFAULT_PORT_RANGE = (1, 1024)
 SCAN_TIMEOUT = 1.5          # per-port TCP connect timeout (seconds)
 SCAN_CONCURRENCY = 256      # asyncio semaphore limit
 MAX_PORTS_PER_SCAN = 65535
+
+# --- DNS ---
+# Android has no /etc/resolv.conf, so we must feed dnspython explicit nameservers.
+# Order: RECON_DNS_NAMESERVERS env (comma-sep) > Android getprop > public fallback.
+def _detect_nameservers() -> list[str]:
+    env = os.environ.get("RECON_DNS_NAMESERVERS")
+    if env:
+        return [s.strip() for s in env.split(",") if s.strip()]
+    import subprocess
+    found: list[str] = []
+    for prop in ("net.dns1", "net.dns2", "net.dns3", "net.dns4"):
+        try:
+            out = subprocess.run(
+                ["getprop", prop], capture_output=True, text=True, timeout=1.0
+            ).stdout.strip()
+            if out:
+                found.append(out)
+        except Exception:
+            pass
+    return found or ["1.1.1.1", "8.8.8.8"]
+
+
+DNS_NAMESERVERS = _detect_nameservers()
