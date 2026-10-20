@@ -1,0 +1,31 @@
+# recon-platform scope allowlist
+# The scanner REFUSES to touch anything not listed here.
+# Only add hosts you OWN or have explicit written permission to scan.
+
+mode: strict
+
+allow:
+  # Loopback — always safe, tests local services you run
+  - 127.0.0.1
+  - ::1
+  - localhost
+
+  # RFC1918 private space — your own LAN
+  - 192.168.0.0/16
+  - 10.0.0.0/8
+
+  # Public test target explicitly authorized for scanning by the Nmap project
+  - scanme.nmap.org
+
+  # Add your own domains below (must be ones you control):
+  # - yourdomain.com
+  # - www.yourdomain.com
+
+deny:
+  # Hard-block these even if a wider allow rule would match
+  - 8.8.8.8
+  - 1.1.1.1
+
+# If true, a target's resolved IPs must ALL be inside `allow` — if any resolved
+# IP falls outside allow (or hits deny), the whole scan aborts. Safer default.
+require_all_ips_in_scope: true
