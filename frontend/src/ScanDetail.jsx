@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getScan, scanSocket, reportUrl } from './api';
 
 export default function ScanDetail({ scanId }) {
@@ -6,36 +6,23 @@ export default function ScanDetail({ scanId }) {
   const [progress, setProgress] = useState(null);
   const [findings, setFindings] = useState([]);
   const [error, setError] = useState('');
-  const wsRef = useRef(null);
 
   useEffect(() => {
     if (!scanId) return;
     setSnap(null); setProgress(null); setFindings([]); setError('');
 
-    const ws = scanSocket(scanId);
-    wsRef.current = ws;
+    let ws = null;
 
-    ws.onmessage = ev => {
-      const msg = JSON.parse(ev.data);
-      if (msg.type === 'snapshot' || msg.type === 'final') setSnap(msg.scan);
-      if (msg.type === 'progress') setProgress(msg.payload);
-      if (msg.type === 'final') {
-        setFindings(msg.findings || []);
-        ws.close();
-      }
-      if (msg.type === 'error') setError(msg.error);
-    };
-    ws.onerror = () => setError('WebSocket error');
-    ws.onclose = () => {};
-
+    // 1. Fetch current state first
     getScan(scanId).then(d => {
       setSnap(d.scan);
+      
+      // 2. If already done, just set findings and close out.
       if (d.scan.status === 'done' || d.scan.status === 'failed') {
         setFindings(d.findings);
       } else {
-        // Only open WS if it's still running
+        // 3. Only open WebSocket if still running
         ws = scanSocket(scanId);
-        wsRef.current = ws;
         ws.onmessage = ev => {
           const msg = JSON.parse(ev.data);
           if (msg.type === 'snapshot' || msg.type === 'final') setSnap(msg.scan);
@@ -50,7 +37,7 @@ export default function ScanDetail({ scanId }) {
       }
     }).catch(e => setError(e.message));
 
-    return () => { ws.close(); wsRef.current = null; };
+    return () => { if (ws) ws.close(); };
   }, [scanId]);
 
   const pct = progress
@@ -73,6 +60,7 @@ export default function ScanDetail({ scanId }) {
           </div>
         </>
       )}
+      
       {snap?.status === 'done' && (
         <div style={{ marginTop: 12, marginBottom: 8 }}>
           <a href={reportUrl(scanId)} download={`recon-report-${scanId}.json`}>
@@ -80,6 +68,7 @@ export default function ScanDetail({ scanId }) {
           </a>
         </div>
       )}
+
       <div style={{ marginTop: 16 }}>
         {findings.length === 0 && snap?.status === 'done' && (
           <div className="dim">No open ports found.</div>
