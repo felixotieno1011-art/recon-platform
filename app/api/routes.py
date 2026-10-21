@@ -92,7 +92,7 @@ async def scan_report(request: Request) -> JSONResponse:
         return JSONResponse({"error": "not found"}, status_code=404)
     
     findings = db.get_findings(scan_id)
-    cve_count = sum(len(f["data"].get("cves", [])) for f in findings if f["kind"] == "port")
+    cve_count = sum(len(f["data"].get("cve_candidates", [])) for f in findings if f["kind"] == "port")
     
     report = {
         "generated_at": time.time(),

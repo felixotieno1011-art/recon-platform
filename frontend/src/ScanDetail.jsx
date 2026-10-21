@@ -76,12 +76,14 @@ export default function ScanDetail({ scanId }) {
         {findings.map((f, i) => {
           if (f.kind === 'port') {
             const b = f.data.banner;
-            const cves = f.data.cves || [];
+            const cves = f.data.cve_candidates || [];
+            const fp = f.data.fingerprint;
             return (
               <div className="finding" key={i} style={{ paddingBottom: 8 }}>
                 <div>
-                  <strong>{f.data.port}/tcp</strong> open
-                  {b && <span className="dim"> · {b.slice(0, 60)}</span>}
+                  <strong>{f.data.ip}:{f.data.port}/tcp</strong> open
+                  {fp && <span className="dim"> · {fp.product} {fp.version}</span>}
+                  {!fp && b && <span className="dim"> · {b.slice(0, 40)}</span>}
                 </div>
                 {cves.map(c => (
                   <div key={c.id} style={{ marginLeft: 16, marginTop: 4, fontSize: 11 }}>
@@ -90,7 +92,11 @@ export default function ScanDetail({ scanId }) {
                              c.severity === 'HIGH' ? '#a85400' : 'var(--warn)',
                       fontWeight: 700, marginRight: 6
                     }}>[{c.severity}]</span>
+                    <span style={{ marginRight: 6, fontSize: 10, opacity: 0.8 }}>
+                      {c.confidence === 'high' ? '🟢' : c.confidence === 'medium' ? '🟡' : '🔴'} {c.confidence.toUpperCase()}
+                    </span>
                     {c.id} — {c.desc}
+                    {c.reason && <div className="dim" style={{ fontSize: 10, marginTop: 2 }}>{c.reason}</div>}
                   </div>
                 ))}
               </div>

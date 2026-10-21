@@ -1,58 +1,20 @@
 {
-  "21": [
-    {
-      "id": "CVE-1999-0497",
-      "desc": "Anonymous FTP access permitted",
-      "severity": "MEDIUM"
-    }
-  ],
-  "22": [
-    {
-      "id": "CVE-2020-14145",
-      "desc": "OpenSSH user enumeration (versions < 8.4)",
-      "severity": "MEDIUM"
-    }
-  ],
-  "23": [
-    {
-      "id": "CVE-1999-0619",
-      "desc": "Telnet sends credentials in cleartext",
-      "severity": "HIGH"
-    }
-  ],
-  "80": [
-    {
-      "id": "CVE-2021-41773",
-      "desc": "Apache HTTP Server Path Traversal (2.4.49)",
-      "severity": "CRITICAL"
-    }
-  ],
-  "443": [
-    {
-      "id": "CVE-2014-0160",
-      "desc": "OpenSSL Heartbleed (versions < 1.0.1g)",
-      "severity": "HIGH"
-    }
-  ],
-  "445": [
-    {
-      "id": "CVE-2017-0144",
-      "desc": "SMBv1 EternalBlue RCE",
-      "severity": "CRITICAL"
-    }
-  ],
-  "3389": [
-    {
-      "id": "CVE-2019-0708",
-      "desc": "RDP BlueKeep RCE",
-      "severity": "CRITICAL"
-    }
-  ],
-  "9999": [
-    {
-      "id": "CVE-TEST-9999",
-      "desc": "Test port mapped to demonstrate CVE display",
-      "severity": "HIGH"
-    }
-  ]
+  "products": {
+    "openssh": [
+      {"id": "CVE-2020-14145", "desc": "OpenSSH user enumeration (versions < 8.4)", "severity": "MEDIUM", "affected": "<8.4"}
+    ],
+    "apache": [
+      {"id": "CVE-2021-41773", "desc": "Apache HTTP Server Path Traversal", "severity": "CRITICAL", "affected": "2.4.49"}
+    ],
+    "nginx": [
+      {"id": "CVE-2021-23017", "desc": "Nginx resolver off-by-one (versions < 1.21.0)", "severity": "HIGH", "affected": "<1.21.0"}
+    ]
+  },
+  "ports": {
+    "21":  [{"id": "CVE-1999-0497", "desc": "Anonymous FTP access permitted", "severity": "MEDIUM"}],
+    "23":  [{"id": "CVE-1999-0619", "desc": "Telnet sends credentials in cleartext", "severity": "HIGH"}],
+    "445": [{"id": "CVE-2017-0144", "desc": "SMBv1 EternalBlue RCE", "severity": "CRITICAL"}],
+    "3389":[{"id": "CVE-2019-0708", "desc": "RDP BlueKeep RCE", "severity": "CRITICAL"}],
+    "9999":[{"id": "CVE-TEST-9999", "desc": "Test port mapped to demonstrate CVE display", "severity": "HIGH"}]
+  }
 }

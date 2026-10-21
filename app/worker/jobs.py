@@ -66,9 +66,12 @@ async def run_scan(ctx, scan_id: str, port_spec: str = "1-1024") -> dict:
 
         # 3. Persist each open port as a finding
         from app.cve import lookup_cves
+        from app.fingerprint import parse_banner
         for r in to_dicts(results):
             if r["open"]:
-                r["cves"] = lookup_cves(r["port"])
+                fingerprint = parse_banner(r.get("banner"))
+                r["fingerprint"] = fingerprint
+                r["cve_candidates"] = lookup_cves(r["port"], fingerprint)
                 db.add_finding(scan_id, "port", r)
 
         db.update_scan(scan_id, status="done", progress=100)
