@@ -33,7 +33,7 @@ async def test_healthz(client):
 
 @pytest.mark.asyncio
 async def test_submit_scan_loopback(client):
-    r = await client.post("/api/scans", json={"target": "127.0.0.1", "ports": "80"})
+    r = await client.post("/api/scans", json={"target": "127.0.0.1", "ports": "80"}, headers={"Authorization": f"Bearer {config.API_TOKEN}"})
     assert r.status_code in (202, 503)
     body = r.json()
     assert "scan_id" in body
@@ -42,14 +42,14 @@ async def test_submit_scan_loopback(client):
 
 @pytest.mark.asyncio
 async def test_submit_out_of_scope(client):
-    r = await client.post("/api/scans", json={"target": "1.2.3.4", "ports": "80"})
+    r = await client.post("/api/scans", json={"target": "1.2.3.4", "ports": "80"}, headers={"Authorization": f"Bearer {config.API_TOKEN}"})
     assert r.status_code == 403
     assert "out of scope" in r.json()["error"].lower()
 
 
 @pytest.mark.asyncio
 async def test_missing_target(client):
-    r = await client.post("/api/scans", json={"ports": "80"})
+    r = await client.post("/api/scans", json={"ports": "80"}, headers={"Authorization": f"Bearer {config.API_TOKEN}"})
     assert r.status_code == 400
 
 
@@ -65,3 +65,20 @@ async def test_list_scans_shape(client):
     assert r.status_code == 200
     data = r.json()
     assert "scans" in data and isinstance(data["scans"], list)
+
+
+@pytest.mark.asyncio
+async def test_submit_scan_unauthorized(client):
+    r = await client.post("/api/scans", json={"target": "127.0.0.1", "ports": "80"})
+    assert r.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_submit_scan_invalid_ports(client):
+    r = await client.post(
+        "/api/scans",
+        json={"target": "127.0.0.1", "ports": "abc-123"},
+        headers={"Authorization": f"Bearer {config.API_TOKEN}"},
+    )
+    assert r.status_code == 400
+    assert "invalid ports" in r.json()["error"]

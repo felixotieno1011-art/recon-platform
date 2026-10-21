@@ -38,7 +38,7 @@ async def test_scan_finds_local_listener():
     server = await asyncio.start_server(_handle, "127.0.0.1", 0)
     port = server.sockets[0].getsockname()[1]
     try:
-        results = await scan_ports("127.0.0.1", [port], progress_cb=None)
+        results = await scan_ports("127.0.0.1", ["127.0.0.1"], [port], progress_cb=None)
     finally:
         server.close()
         await server.wait_closed()
@@ -62,7 +62,7 @@ async def test_scan_reports_closed_port():
 @pytest.mark.asyncio
 async def test_scan_refuses_out_of_scope():
     with pytest.raises(scope_guard.ScopeViolation):
-        await scan_ports("1.2.3.4", [80])
+        await scan_ports("1.2.3.4", ["1.2.3.4"], [80])
 
 
 def test_dns_recon_skips_ip():

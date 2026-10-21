@@ -38,7 +38,9 @@ async def _amain(args: argparse.Namespace) -> int:
         config.SCAN_TIMEOUT = args.timeout
 
     try:
-        results = await scan_ports(args.target, ports, progress_cb=_progress)
+        from app.scope_guard import assert_in_scope
+        ips = assert_in_scope(args.target)
+        results = await scan_ports(args.target, ips, ports, progress_cb=_progress)
     except Exception as e:
         print(f"scan aborted: {type(e).__name__}: {e}", file=sys.stderr)
         return 1

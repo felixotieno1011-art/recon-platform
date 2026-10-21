@@ -1,4 +1,4 @@
-"""Async TCP port scanner. Every public entry wears @guard."""
+"""Async TCP port scanner. Scans pre-resolved IPs, which the caller MUST verify first."""
 from __future__ import annotations
 
 import asyncio
@@ -6,13 +6,13 @@ import logging
 from dataclasses import asdict, dataclass
 
 from app import config
-from app.scope_guard import guard
 
 log = logging.getLogger("recon.scanner.tcp")
 
 
 @dataclass
 class PortResult:
+    ip: str
     port: int
     open: bool
     banner: str | None = None
@@ -24,7 +24,7 @@ async def _probe_one(ip: str, port: int, timeout: float) -> PortResult:
             asyncio.open_connection(ip, port), timeout=timeout
         )
     except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
-        return PortResult(port=port, open=False)
+        return PortResult(ip=ip, port=port, open=False)
 
     banner = None
     try:
@@ -39,7 +39,7 @@ async def _probe_one(ip: str, port: int, timeout: float) -> PortResult:
             await writer.wait_closed()
         except Exception:
             pass
-    return PortResult(port=port, open=True, banner=banner)
+    return PortResult(ip=ip, port=port, open=True, banner=banner)
 
 
 def parse_ports(spec: str) -> list[int]:
@@ -65,35 +65,43 @@ def parse_ports(spec: str) -> list[int]:
     return sorted(ports)
 
 
-@guard
 async def scan_ports(
     target: str,
+    ip_list: list[str],
     ports: list[int],
     *,
     progress_cb=None,
 ) -> list[PortResult]:
-    """Scan `ports` on `target`. Refuses if target is out of scope (raises ScopeViolation)."""
-    from app.scope_guard import resolve_target
-    ip = resolve_target(target)[0]           # guard already validated; use first IP
+    """Scan ports on the given IPs. Caller MUST verify scope BEFORE calling this."""
+    from app.scope_guard import check_target, ScopeViolation
+
+    # Defense-in-depth: re-verify every IP just in case a rogue caller bypasses the API
+    for ip in ip_list:
+        ok, reason, _ = check_target(ip)
+        if not ok:
+            raise ScopeViolation(f"REFUSED {ip}: {reason}")
+
     sem = asyncio.Semaphore(config.SCAN_CONCURRENCY)
     results: list[PortResult] = []
     done = 0
-    total = len(ports)
+    total = len(ip_list) * len(ports)
 
-    async def _wrapped(port: int) -> None:
+    async def _wrapped(ip: str, port: int) -> None:
         nonlocal done
         async with sem:
             res = await _probe_one(ip, port, config.SCAN_TIMEOUT)
-            results.append(res)
+            if res.open:
+                results.append(res)
         done += 1
         if progress_cb and (done % 50 == 0 or done == total):
             progress_cb(done, total)
 
-    log.info("scan %s (%s): %d ports", target, ip, total)
-    await asyncio.gather(*(_wrapped(p) for p in ports))
-    results.sort(key=lambda r: r.port)
-    open_count = sum(1 for r in results if r.open)
-    log.info("scan %s done: %d/%d open", target, open_count, total)
+    log.info("scan %s: %d IPs, %d ports (%d checks)",
+             target, len(ip_list), len(ports), total)
+    tasks = [_wrapped(ip, p) for ip in ip_list for p in ports]
+    await asyncio.gather(*tasks)
+    results.sort(key=lambda r: (r.ip, r.port))
+    log.info("scan %s done: %d open", target, len(results))
     return results
 
 

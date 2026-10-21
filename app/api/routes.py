@@ -15,6 +15,7 @@ from starlette.routing import Route
 from app import config, db
 from app.api.auth import require_auth
 from app.scope_guard import ScopeViolation, assert_in_scope
+from app.scanner.tcp import parse_ports
 
 log = logging.getLogger("recon.api.routes")
 
@@ -40,6 +41,11 @@ async def submit_scan(request: Request) -> JSONResponse:
     ports = str(body.get("ports") or "1-1024")
     if not target:
         return JSONResponse({"error": "target required"}, status_code=400)
+
+    try:
+        parse_ports(ports)
+    except ValueError as e:
+        return JSONResponse({"error": f"invalid ports: {e}"}, status_code=400)
 
     try:
         resolved = assert_in_scope(target)

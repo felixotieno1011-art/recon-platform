@@ -34,7 +34,9 @@ async def run_scan(ctx, scan_id: str, port_spec: str = "1-1024") -> dict:
         return {"scan_id": scan_id, "status": "missing"}
 
     target = scan["target"]
-    log.info("run_scan %s target=%s ports=%s", scan_id, target, port_spec)
+    import json as _json
+    resolved_ips = _json.loads(scan["resolved_ips"])
+    log.info("run_scan %s target=%s ips=%s ports=%s", scan_id, target, resolved_ips, port_spec)
     db.update_scan(scan_id, status="running")
 
     redis_conn = ctx.get("redis") if ctx else None
@@ -60,7 +62,7 @@ async def run_scan(ctx, scan_id: str, port_spec: str = "1-1024") -> dict:
             db.update_scan(scan_id, progress=pct)
             asyncio.create_task(_publish_progress(redis_conn, scan_id, done, total))
 
-        results = await scan_ports(target, ports, progress_cb=progress_cb)
+        results = await scan_ports(target, resolved_ips, ports, progress_cb=progress_cb)
 
         # 3. Persist each open port as a finding
         from app.cve import lookup_cves
