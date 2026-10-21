@@ -51,3 +51,25 @@ def _detect_nameservers() -> list[str]:
 
 
 DNS_NAMESERVERS = _detect_nameservers()
+
+# --- API Auth ---
+# Bearer token for state-changing endpoints. If RECON_API_TOKEN isn't set in env,
+# we generate one on first run and persist to data/.api_token (chmod 600).
+def _load_or_create_api_token() -> str:
+    env = os.environ.get("RECON_API_TOKEN")
+    if env:
+        return env
+    token_file = DATA_DIR / ".api_token"
+    if token_file.exists():
+        return token_file.read_text().strip()
+    import secrets
+    tok = secrets.token_urlsafe(32)
+    token_file.write_text(tok)
+    try:
+        token_file.chmod(0o600)
+    except Exception:
+        pass
+    return tok
+
+
+API_TOKEN = _load_or_create_api_token()

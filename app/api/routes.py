@@ -13,6 +13,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 
 from app import config, db
+from app.api.auth import require_auth
 from app.scope_guard import ScopeViolation, assert_in_scope
 
 log = logging.getLogger("recon.api.routes")
@@ -29,6 +30,7 @@ async def _enqueue(scan_id: str, ports: str) -> bool:
         return False
 
 
+@require_auth
 async def submit_scan(request: Request) -> JSONResponse:
     try:
         body = await request.json()

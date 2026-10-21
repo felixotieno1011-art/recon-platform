@@ -1,10 +1,20 @@
 const API = 'http://127.0.0.1:8000';
 const WS_BASE = 'ws://127.0.0.1:8000';
 
+function getToken() {
+  return localStorage.getItem('recon_token') || '';
+}
+
 export async function submitScan(target, ports) {
+  const token = getToken();
+  if (!token) throw new Error('API Token missing. Please set it in Settings.');
+
   const r = await fetch(`${API}/api/scans`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
     body: JSON.stringify({ target, ports }),
   });
   const body = await r.json();
