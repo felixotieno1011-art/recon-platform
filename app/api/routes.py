@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import time
 import logging
 import sys
 
@@ -75,9 +76,32 @@ async def healthz(request: Request) -> JSONResponse:
     return JSONResponse({"status": "ok"})
 
 
+
+async def scan_report(request: Request) -> JSONResponse:
+    scan_id = request.path_params["scan_id"]
+    row = db.get_scan(scan_id)
+    if row is None:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    
+    findings = db.get_findings(scan_id)
+    cve_count = sum(len(f["data"].get("cves", [])) for f in findings if f["kind"] == "port")
+    
+    report = {
+        "generated_at": time.time(),
+        "scan": row,
+        "summary": {
+            "open_ports": sum(1 for f in findings if f["kind"] == "port"),
+            "dns_records": sum(1 for f in findings if f["kind"] == "dns"),
+            "cves": cve_count
+        },
+        "findings": findings
+    }
+    return JSONResponse(report)
+
 routes = [
     Route("/healthz", healthz, methods=["GET"]),
     Route("/api/scans", submit_scan, methods=["POST"]),
     Route("/api/scans", list_scans, methods=["GET"]),
     Route("/api/scans/{scan_id}", get_scan, methods=["GET"]),
+    Route("/api/scans/{scan_id}/report", scan_report, methods=["GET"]),
 ]

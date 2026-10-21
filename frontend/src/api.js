@@ -27,3 +27,7 @@ export async function listScans() {
 export function scanSocket(scanId) {
   return new WebSocket(`${WS_BASE}/ws/scans/${scanId}`);
 }
+
+export function reportUrl(scanId) {
+  return `${API}/api/scans/${scanId}/report`;
+}
