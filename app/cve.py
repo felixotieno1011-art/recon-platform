@@ -9,7 +9,7 @@ from app import config
 
 log = logging.getLogger("recon.cve")
 
-CVE_MAP_PATH = config.DATA_DIR / "cve_map.json"
+CVE_MAP_PATH = Path(__file__).resolve().parent / "cve_map.json"
 _cache: dict = {}
 
 

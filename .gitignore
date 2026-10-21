@@ -9,3 +9,4 @@ frontend/node_modules/
 .pids/
 node_modules/
 dist/
+!app/cve_map.json
