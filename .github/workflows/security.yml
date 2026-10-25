@@ -1,0 +1,22 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * 1'   # every Monday at 03:00 UTC
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install tools
+        run: pip install bandit pip-audit
+      - name: Bandit (Python SAST)
+        run: bandit -r app/ -ll
+      - name: pip-audit (dependency CVEs)
+        run: pip-audit -r requirements.txt
