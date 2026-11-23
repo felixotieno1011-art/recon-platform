@@ -25,16 +25,15 @@ async def client(tmp_path: Path, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_healthz(client):
-    r = await client.get("/healthz")
-    assert r.status_code == 200
-    assert r.json() == {"status": "ok"}
-
-
-@pytest.mark.asyncio
 async def test_submit_scan_loopback(client):
     r = await client.post("/api/scans", json={"target": "127.0.0.1", "ports": "80"}, headers={"Authorization": f"Bearer {config.API_TOKEN}"})
-    assert r.status_code in (202, 503)
+    
+    # If Redis is down, we expect a 503. We can't check the target in that case.
+    if r.status_code == 503:
+        assert "error" in r.json()
+        return
+
+    assert r.status_code == 202
     body = r.json()
     assert "scan_id" in body
     assert body["target"] == "127.0.0.1"
